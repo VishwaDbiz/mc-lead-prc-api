@@ -1,0 +1,10 @@
+{
+  "main": "mc-lead-prc.raml",
+  "name": "mc-lead-prc",
+  "groupId": "02b32eab-24c3-4337-8ab2-3b89356e1a60",
+  "assetId": "mc-lead-prc",
+  "version": "1.0.0",
+  "classifier": "raml",
+  "tags": [],
+  "descriptorVersion": "1.0.0"
+}
