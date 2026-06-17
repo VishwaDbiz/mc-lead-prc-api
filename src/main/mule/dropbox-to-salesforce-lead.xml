@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dropbox="http://www.mulesoft.org/schema/mule/dropbox" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/dropbox http://www.mulesoft.org/schema/mule/dropbox/current/mule-dropbox.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<dropbox:config name="Dropbox_Connector_Config" doc:name="Dropbox Connector Config" doc:id="95968b5b-e7dc-47b2-b053-2634248fade0">
+		<dropbox:oauth2-connection >
+			<dropbox:oauth-authorization-code consumerKey="${dropbox.consumerKey}" consumerSecret="${dropbox.consumerKey}" authorizationUrl="${dropbox.authorizationUrl}" accessTokenUrl="${dropbox.acessTokenUrl}"/>
+			<dropbox:oauth-callback-config listenerConfig="HTTP_Listener_config" callbackPath="${dropbox.callPath}" authorizePath="${dropbox.authorizePath}" externalCallbackUrl="${dropbox.callBackUrl}" />
+			<dropbox:oauth-store-config objectStore="Object_store" />
+		</dropbox:oauth2-connection>
+	</dropbox:config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="974a3501-fcf0-4a4b-9f31-42bba724435e" />
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="214a7009-215a-4788-87ac-6f808d5c9ea9" >
+		<salesforce:basic-connection username="${salesforce.username}" password="${salesforce.password}" securityToken="${salesforce.securityToken}" url="${salesforce.Url}"/>
+	</salesforce:sfdc-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ad6cec10-c761-44de-a2b7-ab3a1d04222e" >
+		<http:listener-connection host="0.0.0.0" port="${listener.port}" />
+	</http:listener-config>
+	<flow name="dropbox-to-salesforce-leadFlow" doc:id="77c6a6b5-410f-4cab-8291-a762b1df3398" >
+		<dropbox:on-new-or-updated-file-in-folder-listener doc:name="On create or update file in folder" doc:id="770e10a3-59bc-46da-a895-414397ef1bbb" config-ref="Dropbox_Connector_Config" path="${dropbox.path}" recursive="true">
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000"/>
+			</scheduling-strategy>
+		</dropbox:on-new-or-updated-file-in-folder-listener>
+		<logger level="INFO" doc:name="Logger" doc:id="24b3684f-3be8-4936-9ad2-cf8c7111ca73" message="Dropbox Trigger Fired"/>
+		<dropbox:files-download doc:name="Files Download" doc:id="7aaabb19-63fe-4086-991a-ae0006015ebb" config-ref="Dropbox_Connector_Config" dropboxApiArgHeader='#[write({ path: payload.path_display }, "application/json")]'/>
+		<ee:transform doc:name="Transform Message" doc:id="037ccc47-02e7-447e-a779-8ef92f2941e6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var csvData = read(payload, "application/csv")
+---
+csvData map (row) -> {
+    FirstName: row.FirstName,
+    LastName: row.LastName,
+    Email: row.Email,
+    Lead_Email_Id__c: row.Email,
+    Company: row.Company,
+    LeadSource: "Dropbox"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert objectType="Lead" externalIdFieldName="Lead_Email_Id__c" doc:name="Upsert" doc:id="36af718d-84c5-4bb7-a262-b850a562409b" config-ref="Salesforce_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="6cb259cf-1718-42e5-aed5-a624a2bd8a5b" message='#[write(payload, "application/json")]'/>
+	</flow>
+</mule>
