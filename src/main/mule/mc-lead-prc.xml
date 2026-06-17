@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+<mule xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
     <http:listener-config name="mc-lead-prc-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8081" />
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
     <apikit:config name="mc-lead-prc-config" api="mc-lead-prc.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <flow name="mc-lead-prc-main">
+    <salesforce:sfdc-config name="Salesforce_Config1" doc:name="Salesforce Config" doc:id="1ec95399-444f-41f3-a247-13b6d145c4e2" >
+		<salesforce:basic-connection username="sangli.vishwa9620.e55889d2ef56@agentforce.com" password="Sangli.Vishwa123" securityToken="qR7Zw3N5CP8zti713qPhiexIu" url="https://login.salesforce.com/services/Soap/u/64.0"/>
+	</salesforce:sfdc-config>
+	<anypoint-mq:config name="Anypoint_MQ_Config" doc:name="Anypoint MQ Config" doc:id="5badbfc5-cda8-42c9-99ca-76a747d99d4d" >
+		<anypoint-mq:connection url="${mq.url}" clientId="${mq.clientAppId}" clientSecret="${mq.clientSecret}" />
+	</anypoint-mq:config>
+	<flow name="mc-lead-prc-main">
         <http:listener config-ref="mc-lead-prc-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:response>
             <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+                <http:body><![CDATA[#[error.description default error.detailedDescription]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:error-response>
         </http:listener>
         <apikit:router config-ref="mc-lead-prc-config" />
@@ -182,15 +190,41 @@ output application/json
 payload]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<flow-ref doc:name="Flow Reference to commonRequestSub_Flow" doc:id="ebe1a865-d295-421a-963f-b797de9c1f73" name="commonRequestSub_Flow" />
+		<salesforce:query doc:name="Query" doc:id="605e5d4b-715e-40dc-8412-7370a8d578c9" config-ref="Salesforce_Config1">
+			<salesforce:salesforce-query ><![CDATA[SELECT Email FROM Lead]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="f31a86f5-9b94-4479-9e7e-e89e150a1da1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload filter ((item, index) -> item.Email == (vars.requestPayload[0].email) )]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="37a85de9-af7a-4d82-966d-371a1c6a26a8" >
+			<when expression="#[sizeOf(payload) == 0]">
+				<flow-ref doc:name="Flow Reference to commonRequestSub_Flow" doc:id="ebe1a865-d295-421a-963f-b797de9c1f73" name="commonRequestSub_Flow" target="resp"/>
+			</when>
+			<otherwise >
+				<anypoint-mq:publish doc:name="Publish" doc:id="66eb67ae-c085-4bfd-a5ce-f23bc14d0e22" config-ref="Anypoint_MQ_Config" destination="#[p('mq.queue.name')]">
+					<anypoint-mq:body ><![CDATA[#[vars.requestPayload]]]></anypoint-mq:body>
+				</anypoint-mq:publish>
+				<raise-error doc:name="Raise error" doc:id="e6f6ebe6-1d66-41d7-aa03-83740d3864a7" type="CUSTOM:RECORDEXISTS" description="Requested record already exists into the salesforce"/>
+			</otherwise>
+		</choice>
 		<ee:transform doc:name="Transform Message" doc:id="aaf35948-6832-4630-8731-0bf755f51266" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+vars.resp]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<logger level="INFO" doc:name="End Logger" doc:id="4e024179-5ab6-4bfa-a673-072e8cf2d943" message="*******************************************Post /lead completed*********************************************************" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="cc1aa0df-9ac7-402b-b9f7-55195eb8e0ab" type="CUSTOM:RECORDEXISTS">
+				<set-variable value="400" doc:name="Set Variable" doc:id="4ac8365d-9a67-461a-923c-637551d03654" variableName="httpStatus"/>
+			</on-error-propagate>
+		</error-handler>
     </flow>
 </mule>

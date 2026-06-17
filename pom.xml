@@ -73,6 +73,12 @@
 			<version>11.4.0</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.connectors</groupId>
+			<artifactId>anypoint-mq-connector</artifactId>
+			<version>4.0.17</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
 	</dependencies>
 
 	<repositories>

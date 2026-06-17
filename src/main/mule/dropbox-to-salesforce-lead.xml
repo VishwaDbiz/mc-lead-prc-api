@@ -11,12 +11,12 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<dropbox:config name="Dropbox_Connector_Config" doc:name="Dropbox Connector Config" doc:id="95968b5b-e7dc-47b2-b053-2634248fade0">
 		<dropbox:oauth2-connection >
-			<dropbox:oauth-authorization-code consumerKey="${dropbox.consumerKey}" consumerSecret="${dropbox.consumersecret}" authorizationUrl="${dropbox.authorizationUrl}" accessTokenUrl="${dropbox.acessTokenUrl}"/>
+			<dropbox:oauth-authorization-code consumerKey="${dropbox.consumerKey}" consumerSecret="${dropbox.consumersecret}" authorizationUrl="${dropbox.authorizationUrl}" accessTokenUrl="${dropbox.acessTokenUrl}" resourceOwnerId="dropboxUser"/>
 			<dropbox:oauth-callback-config listenerConfig="mc-lead-prc-httpListenerConfig" callbackPath="${dropbox.callPath}" authorizePath="${dropbox.authorizePath}" externalCallbackUrl="${dropbox.callBackUrl}" />
 			<dropbox:oauth-store-config objectStore="Object_store" />
 		</dropbox:oauth2-connection>
 	</dropbox:config>
-	<os:object-store name="Object_store" doc:name="Object store" doc:id="974a3501-fcf0-4a4b-9f31-42bba724435e" />
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="974a3501-fcf0-4a4b-9f31-42bba724435e" entryTtl="-1"/>
 	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="214a7009-215a-4788-87ac-6f808d5c9ea9" >
 		<salesforce:basic-connection username="${salesforce.username}" password="${salesforce.password}" securityToken="${salesforce.securityToken}" url="${salesforce.Url}"/>
 	</salesforce:sfdc-config>
