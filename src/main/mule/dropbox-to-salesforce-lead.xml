@@ -11,8 +11,8 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<dropbox:config name="Dropbox_Connector_Config" doc:name="Dropbox Connector Config" doc:id="95968b5b-e7dc-47b2-b053-2634248fade0">
 		<dropbox:oauth2-connection >
-			<dropbox:oauth-authorization-code consumerKey="${dropbox.consumerKey}" consumerSecret="${dropbox.consumerKey}" authorizationUrl="${dropbox.authorizationUrl}" accessTokenUrl="${dropbox.acessTokenUrl}"/>
-			<dropbox:oauth-callback-config listenerConfig="HTTP_Listener_config" callbackPath="${dropbox.callPath}" authorizePath="${dropbox.authorizePath}" externalCallbackUrl="${dropbox.callBackUrl}" />
+			<dropbox:oauth-authorization-code consumerKey="${dropbox.consumerKey}" consumerSecret="${dropbox.consumersecret}" authorizationUrl="${dropbox.authorizationUrl}" accessTokenUrl="${dropbox.acessTokenUrl}"/>
+			<dropbox:oauth-callback-config listenerConfig="mc-lead-prc-httpListenerConfig" callbackPath="${dropbox.callPath}" authorizePath="${dropbox.authorizePath}" externalCallbackUrl="${dropbox.callBackUrl}" />
 			<dropbox:oauth-store-config objectStore="Object_store" />
 		</dropbox:oauth2-connection>
 	</dropbox:config>
@@ -20,9 +20,9 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="214a7009-215a-4788-87ac-6f808d5c9ea9" >
 		<salesforce:basic-connection username="${salesforce.username}" password="${salesforce.password}" securityToken="${salesforce.securityToken}" url="${salesforce.Url}"/>
 	</salesforce:sfdc-config>
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ad6cec10-c761-44de-a2b7-ab3a1d04222e" >
+	<!-- <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ad6cec10-c761-44de-a2b7-ab3a1d04222e" >
 		<http:listener-connection host="0.0.0.0" port="${listener.port}" />
-	</http:listener-config>
+	</http:listener-config> -->
 	<flow name="dropbox-to-salesforce-leadFlow" doc:id="77c6a6b5-410f-4cab-8291-a762b1df3398" >
 		<dropbox:on-new-or-updated-file-in-folder-listener doc:name="On create or update file in folder" doc:id="770e10a3-59bc-46da-a895-414397ef1bbb" config-ref="Dropbox_Connector_Config" path="${dropbox.path}" recursive="true">
 			<scheduling-strategy >
