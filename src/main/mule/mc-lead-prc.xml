@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
-http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+<mule xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
     <http:listener-config name="mc-lead-prc-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
@@ -8,6 +9,9 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
     <salesforce:sfdc-config name="Salesforce_Config1" doc:name="Salesforce Config" doc:id="1ec95399-444f-41f3-a247-13b6d145c4e2" >
 		<salesforce:basic-connection username="sangli.vishwa9620.e55889d2ef56@agentforce.com" password="Sangli.Vishwa123" securityToken="qR7Zw3N5CP8zti713qPhiexIu" url="https://login.salesforce.com/services/Soap/u/64.0"/>
 	</salesforce:sfdc-config>
+	<anypoint-mq:config name="Anypoint_MQ_Config" doc:name="Anypoint MQ Config" doc:id="5badbfc5-cda8-42c9-99ca-76a747d99d4d" >
+		<anypoint-mq:connection url="${mq.url}" clientId="${mq.clientAppId}" clientSecret="${mq.clientSecret}" />
+	</anypoint-mq:config>
 	<flow name="mc-lead-prc-main">
         <http:listener config-ref="mc-lead-prc-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -202,6 +206,9 @@ payload filter ((item, index) -> item.Email == (vars.requestPayload[0].email) )]
 				<flow-ref doc:name="Flow Reference to commonRequestSub_Flow" doc:id="ebe1a865-d295-421a-963f-b797de9c1f73" name="commonRequestSub_Flow" target="resp"/>
 			</when>
 			<otherwise >
+				<anypoint-mq:publish doc:name="Publish" doc:id="66eb67ae-c085-4bfd-a5ce-f23bc14d0e22" config-ref="Anypoint_MQ_Config" destination="#[p('mq.queue.name')]">
+					<anypoint-mq:body ><![CDATA[#[vars.requestPayload]]]></anypoint-mq:body>
+				</anypoint-mq:publish>
 				<raise-error doc:name="Raise error" doc:id="e6f6ebe6-1d66-41d7-aa03-83740d3864a7" type="CUSTOM:RECORDEXISTS" description="Requested record already exists into the salesforce"/>
 			</otherwise>
 		</choice>
