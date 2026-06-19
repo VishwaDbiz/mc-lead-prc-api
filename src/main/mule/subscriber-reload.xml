@@ -51,7 +51,7 @@ attributes.ackToken]]></ee:set-variable>
 		<logger level="INFO" doc:name="End Logger" doc:id="d72f1e7d-a5e5-4604-8de8-68d09bed6f1d" message="*********************************Message completely reloaded to lead object*********************************" />
 		<error-handler >
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6c627521-44c0-4c5d-888a-e6effe7fb94a" type="ANY">
-				<logger level="INFO" doc:name="Logger" doc:id="74c72b10-b1a5-4f22-a3d5-b10da02fe37b" message='#[output application/json --- &#10;if(attributes.deliveryCount == 3) "Retry exhausted and moving the message to DLQ" else (attributes.deliveryCount == 3 ++ "th retry failed to push the message to salesforce lead object")]'/>
+				<logger level="INFO" doc:name="Logger" doc:id="74c72b10-b1a5-4f22-a3d5-b10da02fe37b" message='#[output application/json --- &#10;if(attributes.deliveryCount == 3) "Retry exhausted and moving the message to DLQ" else (attributes.deliveryCount as String) ++ "th retry failed to push the message to salesforce lead object")]'/>
 				<anypoint-mq:nack doc:name="Nack" doc:id="8ee8004c-6384-4996-9ac5-cfe5d33415a0" config-ref="Anypoint_MQ_Config" ackToken="#[vars.ackToken]"/>
 			</on-error-propagate>
 		</error-handler>
