@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="subscriber-reloadFlow"
+		doc:id="373d280b-bf4a-47ce-936d-1613946b1516">
+		<anypoint-mq:subscriber doc:name="Subscriber"
+			doc:id="529e6243-0f3a-4bdb-bb8f-7a9970790991"
+			config-ref="Anypoint_MQ_Config" destination="${mq.queue.name}"
+			acknowledgementMode="MANUAL" />
+		<logger level="INFO" doc:name="Start Logger"
+			doc:id="98ab4426-87e3-4165-8d16-dd8d5c6f4726"
+			message="*********************************Message picked to reload to lead object*********************************" />
+		<ee:transform doc:name="Transform Message"
+			doc:id="c3b9c4ac-445a-41df-b270-226cc9fe0156">
+			<ee:variables>
+				<ee:set-variable variableName="url"><![CDATA[%dw 2.0
+output application/json
+---
+p('prc.url')]]></ee:set-variable>
+				<ee:set-variable variableName="headers"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Content-Type": p('prc.contentType'),
+	"client_secret": p('prc.client_secret'),
+    "client_id": p('prc.client_id')
+}]]></ee:set-variable>
+				<ee:set-variable variableName="method"><![CDATA[%dw 2.0
+output application/json
+---
+p('prc.create.method')]]></ee:set-variable>
+				<ee:set-variable variableName="requestPayload"><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+				<ee:set-variable variableName="ackToken"><![CDATA[%dw 2.0
+output application/json
+---
+attributes.ackToken]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference to commonRequestSub_Flow" doc:id="e6a76500-a3a5-4249-b5eb-06ef88418d04" name="commonRequestSub_Flow" target="resp" />
+		<anypoint-mq:ack doc:name="Ack" doc:id="c1687e2b-bd11-4080-89a9-f82abdecbb5d" config-ref="Anypoint_MQ_Config" ackToken="#[vars.ackToken]"/>
+		<logger level="INFO" doc:name="End Logger" doc:id="d72f1e7d-a5e5-4604-8de8-68d09bed6f1d" message="*********************************Message completely reloaded to lead object*********************************" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6c627521-44c0-4c5d-888a-e6effe7fb94a" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="74c72b10-b1a5-4f22-a3d5-b10da02fe37b" message='#[output application/json --- &#10;if(attributes.deliveryCount == 3) "Retry exhausted and moving the message to DLQ" else (attributes.deliveryCount == 3 ++ "th retry failed to push the message to salesforce lead object")]'/>
+				<anypoint-mq:nack doc:name="Nack" doc:id="8ee8004c-6384-4996-9ac5-cfe5d33415a0" config-ref="Anypoint_MQ_Config" ackToken="#[vars.ackToken]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
